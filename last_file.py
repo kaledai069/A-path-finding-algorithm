@@ -1,12 +1,14 @@
 import pygame
+from warnings import warn
+import heapq
 
 pygame.init()
 
 screen = pygame.display.set_mode((1366, 768))
 
-rows, cols = (30, 64)
-rect_width = 20
-rect_height = 20
+rows, cols = (57, 122)
+rect_width = 10
+rect_height = 10
 box_arrays = []
 start_box_pos = (80, 60)
 end_box_pos = (1150, 60)
@@ -81,6 +83,25 @@ class Node():
 
     def __eq__(self, other):
         return self.position == other.position
+    
+    def __repr__(self):
+      return f"{self.position} - g: {self.g} h: {self.h} f: {self.f}"
+
+    # defining less than for purposes of heap queue
+    def __lt__(self, other):
+      return self.f < other.f
+    
+    # defining greater than for purposes of heap queue
+    def __gt__(self, other):
+      return self.f > other.f
+
+def return_path(current_node):
+    path = []
+    current = current_node
+    while current is not None:
+        path.append(current.position)
+        current = current.parent
+    return path[::-1]  # Return reversed path
 
 box_node_array = [[Node() for i in range(cols)] for j in range(rows)]
 
@@ -90,8 +111,8 @@ def draw_text():
 
 def draw_rects():
     global box_arrays
-    l_x = 12
-    l_y = 130
+    l_x = 13
+    l_y = 131
     outer_shell_rect = (9, 127, 1349, 635)
     pygame.draw.rect(screen, orange_col, outer_shell_rect, width = 3, border_radius=2)
     for i in range(rows):
@@ -100,9 +121,9 @@ def draw_rects():
             pygame.draw.rect(screen, white, (l_x, l_y, rect_width, rect_height))
             box_node_array[i][j].set_position(l_x, l_y)
             box_node_array[i][j].set_index(convert_pos_to_array_index((l_x, l_y)))
-            l_x += 21
-        l_x = 12
-        l_y += 21
+            l_x += 11
+        l_x = 13
+        l_y += 11
 
     # for i in range(rows):
     #     for j in range(cols):
@@ -220,11 +241,8 @@ def btn_classifier(click_pos):
 
         # for node in path:
         #     pygame.draw.rect(screen, pygame.Color(255, 0, 0), (node[1] * 21 + 12, node[0] * 21 + 130, 20, 20))
+   
 
-
-        
-
-        
 
 def draw_basic_UIs():
     screen.fill(grey_col)
@@ -257,23 +275,23 @@ def convert_pos_to_array_index(pos):
     x_val = 0
     y_val = 0
     x, y = pos
-    x -= 12
-    y -= 130
+    x -= 13
+    y -= 131
     while x >= 0:
-        x -= 21
+        x -= 11
         x_val += 1
     while y >= 0:
-        y -= 21
+        y -= 11
         y_val += 1
 
     return (y_val - 1, x_val - 1) 
+    
 
-def run_a_star_algorithm():
+def run_a_star_algorithm(allow_diagonal_movement = False):
     start_index = convert_pos_to_array_index(start_node_position)
     end_index = convert_pos_to_array_index(end_node_position)
     box_node_array[start_index[0]][start_index[1]].node_type = 1
     box_node_array[end_index[0]][end_index[1]].node_type = -1
-
 
     global cols 
     global rows
@@ -287,7 +305,6 @@ def run_a_star_algorithm():
                 maze[i][j] = 1
 
 
-
     start_node = Node(None, start_index)
     start_node.g = start_node.h = start_node.f = 0
 
@@ -298,43 +315,47 @@ def run_a_star_algorithm():
     open_list = []
     closed_list = []
 
-    # Add the start node
-    open_list.append(start_node)
+    # Heapify the open_list and Add the start node
+    heapq.heapify(open_list) 
+    heapq.heappush(open_list, start_node)
+
+    # Adding a stop condition
+    outer_iterations = 0
+    max_iterations = 10000
+
+    # what squares do we search
+    adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
+    if allow_diagonal_movement:
+        adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1),)
+
     # Loop until you find the end
     while len(open_list) > 0:
+        outer_iterations += 1
+
+        if outer_iterations > max_iterations:
+          # if we hit this point return the path such as it is
+          # it will not contain the destination
+          warn("giving up on pathfinding too many iterations")
+          return return_path(current_node)       
+        
         # Get the current node
-        current_node = open_list[0]
-        current_index = 0
-
-        for index, item in enumerate(open_list):
-            if item.f < current_node.f:
-                current_node = item
-                current_index = index
-
-        # Pop current off open list, add to closed list
-        open_list.pop(current_index)
+        current_node = heapq.heappop(open_list)
         closed_list.append(current_node)
 
         # Found the goal
         if current_node == end_node:
-            print("Generate Children")
-            path = []
-            current = current_node
-            while current is not None:
-                path.append(current.position)
-                current = current.parent
-            return path
-            
+            return return_path(current_node)
 
-        # Generate Children
+        # Generate children
         children = []
-        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
+        
+        for new_position in adjacent_squares: # Adjacent squares
+
             # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
             # Make sure within range
-            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (
-                    len(maze[len(maze) - 1]) - 1) or node_position[1] < 0:
+            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
                 continue
 
             # Make sure walkable terrain
@@ -344,17 +365,14 @@ def run_a_star_algorithm():
             # Create new node
             new_node = Node(current_node, node_position)
 
-            # Append this new node to the children validated list
+            # Append
             children.append(new_node)
-            
 
         # Loop through children
         for child in children:
-
             # Child is on the closed list
-            for closed_child in closed_list:
-                if child == closed_child:
-                    continue
+            if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
+                continue
 
             # Create the f, g, and h values
             child.g = current_node.g + 1
@@ -362,13 +380,15 @@ def run_a_star_algorithm():
             child.f = child.g + child.h
 
             # Child is already in the open list
-            for open_node in open_list:
-                if child == open_node and child.g > open_node.g:
-                    continue
+            if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
+                continue
 
             # Add the child to the open list
-            open_list.append(child)
+            heapq.heappush(open_list, child)
             animation_list.append(child.position)
+
+    warn("Couldn't get a path to destination")
+    return None
 
 
 draw_basic_UIs()
@@ -405,7 +425,7 @@ while running:
     if node_list_complete:
         if time_gap < 0:
             time_gap = 5
-            pygame.draw.rect(screen, pygame.Color(0, 255, 0), (animation_list[animation_index][1] * 21 + 12, animation_list[animation_index][0] * 21 + 130, 20, 20))
+            pygame.draw.rect(screen, pygame.Color(0, 255, 0), (animation_list[animation_index][1] * 11 + 13, animation_list[animation_index][0] * 11 + 131, 10, 10))
             if animation_index + 1 == len(animation_list):
                 node_list_complete = False
                 path_list_complete = True
@@ -417,7 +437,7 @@ while running:
     if path_list_complete:
         if path_time_gap < 0:
             path_time_gap = 5
-            pygame.draw.rect(screen, pygame.Color(255, 0, 0), (path[path_index][1] * 21 + 12, path[path_index][0] * 21 + 130, 20, 20))
+            pygame.draw.rect(screen, pygame.Color(255, 0, 0), (path[path_index][1] * 11 + 13, path[path_index][0] * 11 + 131, 10, 10))
             if path_index + 1 == len(path):
                 path_list_complete = False
             else:
@@ -426,8 +446,6 @@ while running:
             path_time_gap -= 1
 
 
-
-        
         
     
     if mouse_motion and blockers_btn_state:
