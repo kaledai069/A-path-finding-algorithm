@@ -324,13 +324,14 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
     # Adding a stop condition
     outer_iterations = 0
     # max_iterations = (len(maze[0]) * len(maze) // 2)
-    max_iterations = 10000
+    max_iterations = 50000
 
     # what squares do we search
     adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
     if allow_diagonal_movement:
         adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1),)
 
+    current_node = Node()
     # Loop until you find the end
     while len(open_list) > 0:
         outer_iterations += 1
@@ -344,9 +345,11 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
         # Get the current node
         current_node = heapq.heappop(open_list)
         closed_list.append(current_node)
-
+        animation_list.append({"pos": current_node.position, "color": start_algo_light_col})
         # Found the goal
         if current_node == end_node:
+            print(len(animation_list))
+            print(outer_iterations)
             return return_path(current_node)
 
         # Generate children
@@ -388,7 +391,7 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
 
             # Add the child to the open list
             heapq.heappush(open_list, child)
-            animation_list.append(child.position)
+            animation_list.append({"pos": child.position, "color": pygame.Color(0,255,0)})
 
     warn("Couldn't get a path to destination")
     return None
@@ -425,17 +428,25 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             btn_classifier(pygame.mouse.get_pos())
     
+    # if node_list_complete:
+    #     if time_gap < 0:
+    #         time_gap = 5
+    #         pygame.draw.rect(screen, animation_list[animation_index]["color"], (animation_list[animation_index]["pos"][1] * 21 + 12, animation_list[animation_index]["pos"][0] * 21 + 130, 20, 20))
+    #         if animation_index + 1 == len(animation_list):
+    #             node_list_complete = False
+    #             path_list_complete = True
+    #         else:
+    #             animation_index += 1
+    #     else:
+    #         time_gap -= 1
+
     if node_list_complete:
-        if time_gap < 0:
-            time_gap = 5
-            pygame.draw.rect(screen, pygame.Color(0, 255, 0), (animation_list[animation_index][1] * 21 + 12, animation_list[animation_index][0] * 21 + 130, 20, 20))
-            if animation_index + 1 == len(animation_list):
-                node_list_complete = False
-                path_list_complete = True
-            else:
-                animation_index += 1
+        pygame.draw.rect(screen, animation_list[animation_index]["color"], (animation_list[animation_index]["pos"][1] * 21 + 12, animation_list[animation_index]["pos"][0] * 21 + 130, 20, 20))
+        if animation_index + 1 == len(animation_list):
+            node_list_complete = False
+            path_list_complete = True
         else:
-            time_gap -= 1
+            animation_index += 1
 
     if path_list_complete:
         if path_time_gap < 0:
@@ -448,10 +459,6 @@ while running:
         else:
             path_time_gap -= 1
 
-
-
-        
-        
     
     if mouse_motion and blockers_btn_state:
         mouse_event_handler(pygame.mouse.get_pos())

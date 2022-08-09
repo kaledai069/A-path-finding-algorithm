@@ -285,7 +285,10 @@ def convert_pos_to_array_index(pos):
         y_val += 1
 
     return (y_val - 1, x_val - 1) 
-    
+
+def calculate_val(pos):
+    global cols
+    return pos[0] + pos[1] * cols 
 
 def run_a_star_algorithm(allow_diagonal_movement = False):
     start_index = convert_pos_to_array_index(start_node_position)
@@ -315,19 +318,25 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
     open_list = []
     closed_list = []
 
+    closed_value_list = []
+    open_value_list = []
+
     # Heapify the open_list and Add the start node
     heapq.heapify(open_list) 
     heapq.heappush(open_list, start_node)
 
+    open_value_list.append((start_node.position[0] + start_node.position[1] * cols, start_node.g))
+
     # Adding a stop condition
     outer_iterations = 0
-    max_iterations = 10000
+    max_iterations = 50000
 
     # what squares do we search
     adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
     if allow_diagonal_movement:
         adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1),)
 
+    current_node = Node()
     # Loop until you find the end
     while len(open_list) > 0:
         outer_iterations += 1
@@ -342,9 +351,18 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
         current_node = heapq.heappop(open_list)
         closed_list.append(current_node)
         
+        if current_node.position is not None:
+            closed_value_list.append(current_node.position[0] + current_node.position[1] * cols)
+        # if current_node.parent is not None:
+        #     animation_list.append({"pos": current_node.parent.position, "color": start_algo_light_col})
+
+
+        animation_list.append({"pos": current_node.position, "color": start_algo_light_col})
 
         # Found the goal
         if current_node == end_node:
+            print(len(animation_list))
+            print(outer_iterations)
             return return_path(current_node)
 
         # Generate children
@@ -367,37 +385,55 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
             new_node = Node(current_node, node_position)
 
             # Append
+
             children.append(new_node)
 
         # Loop through children
         for child in children:
             # Child is on the closed list
-            if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
+            child_pos_val = calculate_val(child.position)
+            if len([item for item in closed_value_list if item == child_pos_val]) > 0:
                 continue
+
+            # for close_child in closed_list:
+            #     if close_child == new_node:
+            #         continue
 
             # Create the f, g, and h values
             child.g = current_node.g + 1
             child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
             child.f = child.g + child.h
 
+
             # Child is already in the open list
-            if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
+            # if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
+            #     continue
+
+            if len([item for item in open_value_list if child_pos_val== item[0] and child.g > item[1]]) > 0:
                 continue
+
+
+            # for open_node in open_list:
+            #     if child == open_node and child.g > open_node.g:
+            #         continue
 
             # Add the child to the open list
             heapq.heappush(open_list, child)
-            animation_list.append(child.position)
+            open_value_list.append((child_pos_val, child.g))
+            animation_list.append({"pos": child.position, "color": pygame.Color(0, 255, 0)})
+            # pygame.draw.rect(screen, animation_list[len(animation_list) - 1]["color"], (animation_list[len(animation_list) - 1]["pos"][1] * 11 + 13, animation_list[len(animation_list) - 1]["pos"][0] * 11 + 131, 10, 10))
 
+    
     warn("Couldn't get a path to destination")
     return None
+
 
 
 draw_basic_UIs()
 
 animation_index = 0
 path_index = 0
-time_gap = 5
-
+time_gap = -1
 path_time_gap = 5
 
 while running:
@@ -423,17 +459,25 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
             btn_classifier(pygame.mouse.get_pos())
     
+    # if node_list_complete:
+    #     if time_gap < 0:
+    #         time_gap = -1
+    #         pygame.draw.rect(screen, animation_list[animation_index]["color"], (animation_list[animation_index]["pos"][1] * 11 + 13, animation_list[animation_index]["pos"][0] * 11 + 131, 10, 10))
+    #         if animation_index + 1 == len(animation_list):
+    #             node_list_complete = False
+    #             path_list_complete = True
+    #         else:
+    #             animation_index += 1
+    #     else:
+    #         time_gap -= 1
+
     if node_list_complete:
-        if time_gap < 0:
-            time_gap = 5
-            pygame.draw.rect(screen, pygame.Color(0, 255, 0), (animation_list[animation_index][1] * 11 + 13, animation_list[animation_index][0] * 11 + 131, 10, 10))
-            if animation_index + 1 == len(animation_list):
-                node_list_complete = False
-                path_list_complete = True
-            else:
-                animation_index += 1
+        pygame.draw.rect(screen, animation_list[animation_index]["color"], (animation_list[animation_index]["pos"][1] * 11 + 13, animation_list[animation_index]["pos"][0] * 11 + 131, 10, 10))
+        if animation_index + 1 == len(animation_list):
+            node_list_complete = False
+            path_list_complete = True
         else:
-            time_gap -= 1
+            animation_index += 1
 
     if path_list_complete:
         if path_time_gap < 0:
