@@ -38,6 +38,7 @@ start_btn_clicked = False
 end_btn_clicked = False
 blockers_btn_clicked = False
 animation_completion = False
+no_path_found_state = False
 
 start_node_position = ()
 end_node_position = ()
@@ -273,6 +274,7 @@ def reset_all_vals():
     global animation_index
     global path_index
     global path_time_gap 
+    global no_path_found_state
 
     box_arrays = []
     animation_list = []
@@ -294,6 +296,7 @@ def reset_all_vals():
     animation_index = 0
     path_index = 0
     path_time_gap = 1
+    no_path_found_state = False
     draw_basic_UIs()
 
 
@@ -465,9 +468,14 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
             animation_list.append({"pos": child.position, "color": open_list_node_fill_color})
            
     warn("Couldn't get a path to destination")
+    no_path_found()
     return None
 
-
+def no_path_found():
+    global no_path_found_state 
+    no_path_found_state = True
+    no_path_text = font_large.render("No Path Found", True, white)
+    screen.blit(no_path_text, (820, 70))
 
 draw_basic_UIs()
 
@@ -511,7 +519,7 @@ while running:
         else:
             animation_index += 1
 
-    if path_list_complete:
+    if path_list_complete and not no_path_found_state:
         if path_time_gap < 0:
             path_time_gap = 1
             if path_index + 1 != len(path):
