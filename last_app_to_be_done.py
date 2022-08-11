@@ -327,7 +327,7 @@ def run_a_star_algorithm(allow_diagonal_movement = False):
     # Adding a stop condition
     outer_iterations = 0
     # max_iterations = (len(maze[0]) * len(maze) // 2)
-    max_iterations = 50000
+    max_iterations = 500000
 
     # what squares do we search
     adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
