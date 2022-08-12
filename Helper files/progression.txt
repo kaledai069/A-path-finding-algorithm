@@ -1,0 +1,4 @@
+1. Board
+2. Button Placement
+3. Button functionality
+4. Algorithm Understanding

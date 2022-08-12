@@ -10,7 +10,7 @@ fps_clock = pygame.time.Clock()
 
 screen = pygame.display.set_mode((1366, 768))
 pygame.display.set_caption("A* Path Finding Visualizer")
-icon_image = pygame.image.load('idea.png')
+icon_image = pygame.image.load('./Assets/path.png')
 pygame.display.set_icon(icon_image)
 
 rows, cols = (57, 122)
@@ -69,8 +69,8 @@ current_node_fill_color = pygame.Color("#FFD93D")
 open_list_node_fill_color = pygame.Color("#21ABA5")
 
 # Fonts Defined
-font_large = pygame.font.Font('Roboto-Bold.ttf', 28)
-font_small = pygame.font.Font('Roboto-Regular.ttf', 18)
+font_large = pygame.font.Font('./Assets/Roboto-Bold.ttf', 28)
+font_small = pygame.font.Font('./Assets/Roboto-Regular.ttf', 18)
 
 def generate_maze():
     # Find number of surrounding cells
